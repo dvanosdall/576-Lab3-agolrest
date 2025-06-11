@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Hello, AGOL!</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description" content="" />
+
+    <!-- ArcGIS apis and css file js library -->
+    <link rel="stylesheet" href="https://js.arcgis.com/4.25/esri/themes/light/main.css">
+    <script src="https://js.arcgis.com/4.25/"></script>
+
+    <!-- modules for the the full screen map -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            require(["esri/config",
+                "esri/Map",
+                "esri/views/MapView",
+                "esri/widgets/BasemapGallery",
+                "esri/widgets/Expand",
+                "esri/widgets/Locate",
+                "esri/widgets/Search",
+                "esri/Graphic",
+                "esri/layers/GraphicsLayer",
+                "esri/layers/FeatureLayer"
+            ], function (
+                esriConfig,
+                Map,
+                MapView,
+                BasemapGallery,
+                Expand,
+                Locate,
+                Search,
+                Graphic,
+                GraphicsLayer,
+                FeatureLayer
+            ) {
+                esriConfig.apiKey = "AAPTxy8BH1VEsoebNVZXo8HurA7KuWFcKWHkeJGoN8LUQ0kg89t8Mp9cvPVKOEIlsdPNLfXn5b7CCVz-TOsYcUlMoSeMzi8wk5dok7tlJEH1AT1D08Fi4R08Yc-PqHpmdRfewyDZ3eKIjCxRy2ypQ7t_XLIUEo5TrWCxuzoL-CiULHI9PILuzJZ9AY1270cOvy30f3K9Jl_RnHOWwK1AQpkEKmKK3fbIhSplvXWfswyP60ZOP7jizaZoFHiwlIPf7-kQAT1_oy0SXwjE";
+
+                const earthquakeLayer = new FeatureLayer({
+                    url: "https://services3.arcgis.com/7bJVHfju2RXdGZa4/arcgis/rest/services/UK_Historical_Earthquakes/FeatureServer/0",
+                    outFields: ["*"],
+                    popupTemplate: {
+                        title: "<h3><u>Earthquake at {LOCALITY}</u></h3>",
+                        content: `<ul>
+                                    <li><b>Date:</b> {DY_MO_YEAR}</li>
+                                    <li><b>Time (HR:MN:SS):</b> {HRMN} : {SECS}</li>
+                                    <li><b><a href='https://www.britannica.com/science/earthquake-geology/Earthquake-magnitude' target='_blank'>Magnitude (MAG)</a>:</b> {MAG}</li>
+                                    <li><b><a href='https://www.usgs.gov/programs/earthquake-hazards/determining-depth-earthquake' target='_blank'>Depth (km)</a>:</b> {DEP}</li>
+                                    <li><b>Latitude:</b> {LAT}</li>
+                                    <li><b>Longitude:</b> {LON}</li>
+                                    <li><b><a href='https://www.britannica.com/science/earthquake-geology/Intensity-and-magnitude-of-earthquakes' target='_blank'>Intensity</a>:</b> {INT}</li>
+                                    <li><b>Comments:</b> {COMMENTS}</li>
+                                </ul>
+                                    <br/>
+                                    <i>Note: These are Historical Earthquakes. Magnitude sizes on the map reflect the earthquake strength (MAG).</i>`
+                    }
+                });
+
+                const airportRenderer = {
+                    "type": "simple",
+                    "symbol": {
+                        "type": "picture-marker",
+                        "url": "local_airport_24dp_EA33F7.png",
+                        "width": "18px",
+                        "height": "18px"
+                    }
+                }
+
+                //const to make the airport labels
+                const airportLabels = {
+                    symbol: {
+                        type: "text",
+                        color: "#FFFFFF",
+                        haloColor: "#5E8D74",
+                        haloSize: "2px",
+                        font: {
+                            size: "12px",
+                            family: "Noto Sans",
+                            style: "italic",
+                            weight: "normal"
+                        }
+                    },
+                    labelPlacement: "above-center",
+                    labelExpressionInfo: {
+                        expression: "$feature.Airport"
+                    }
+                };
+
+                const ukAirports = new FeatureLayer({
+                    url: "https://services.arcgis.com/WQ9KVmV6xGGMnCiQ/arcgis/rest/services/Location_of_UK_Airports/FeatureServer/0",
+                    renderer: airportRenderer,
+                    definitionExpression: "x >= -5.0 AND x <= 1.8 AND y >= 50 AND y <= 55.8", //adding sql to filter for airports only in england not all of uk
+                    outFields: ["*"],
+                    labelingInfo: [airportLabels], //adding the labels to the airports
+                    popupTemplate: {
+                        title: "<b>{Airport}</b> Airport",
+                        content: `
+                                    <ul>
+                                        <li><b>Latitude:</b> {Y}</li>
+                                        <li><b>Longitude:</b> {X}</li>
+                                    </ul>
+                                `
+                    }
+                });
+
+                const policeRenderer = {
+                    "type": "simple",
+                    "symbol": {
+                        "type": "picture-marker",
+                        "url": "local_police_24dp_0000F5.png",
+                        "width": "18px",
+                        "height": "18px"
+                    }
+                }
+
+                //const to make the airport labels
+                // this would be the labels for the police stations but it is way to congested so I have commented it out
+                const policeLabels = {
+                    symbol: {
+                        type: "text",
+                        color: "#0000F5",
+                        haloColor: "#FFFFFF",
+                        haloSize: "2px",
+                        font: {
+                            size: "12px",
+                            family: "Noto Sans",
+                            style: "bold",
+                            weight: "normal"
+                        }
+                    },
+                    labelPlacement: "above-center",
+                    labelExpressionInfo: {
+                        expression: "$feature.name"
+                    }
+                };
+
+                const ukPoliceStations = new FeatureLayer({
+                    url: "https://services.arcgis.com/HRPe58bUyBqyyiCt/arcgis/rest/services/Police_stations_shp/FeatureServer/0",
+                    renderer: policeRenderer,
+                    outFields: ["*"],
+                    labelingInfo: [policeLabels], //adding the labels to the airports
+                    popupTemplate: {
+                        title: "<b>Name (if avail): {name}</b>",
+                        content: `
+                                    <ul>
+                                        <li><b>FID_1:</b> {FID_1}</li>
+                                        <li><b>osm_id:</b> {osm_id}</li>
+                                        <li><b>code:</b> {code}</li>
+                                        <li><b>fclass:</b> {fclass}</li>
+                                    </ul>
+                                `
+                    }
+                });
+
+                const map = new Map({
+                    // Basemap layer - city names
+                    basemap: "arcgis-newspaper",
+                    layers: [earthquakeLayer, ukAirports, ukPoliceStations],
+                });
+
+                const view = new MapView({
+                    map: map,
+                    // Longitude, latitude for Liverpool FC stadium Anfield in the UK
+                    center: [-2.961425, 53.430759],
+                    // Div element
+                    container: "viewDiv",
+                    // Detailed view
+                    scale: 10000
+                });
+
+                // addding the constructor for the graphics layer
+                const graphicsLayer = new GraphicsLayer();
+                map.add(graphicsLayer);
+
+                const point = { //Create a point
+                    type: "point",
+                    longitude: -2.961425,    //long lat of Liverpool FC stadium (anfield)
+                    latitude: 53.430759
+                };
+
+                const simpleMarkerSymbol = {
+                    type: "simple-marker",
+                    style: "diamond",
+                    color: [200, 16, 46],
+                    outline: {
+                        color: [255, 255, 255],
+                        width: 1
+                    }
+                };
+
+                const popupTemplate = {
+                    title: "{Name}",
+                    content: "{Description}"
+                }
+                const attributes = {
+                    Name: "Anfield Stadium, Liverpool FC",
+                    Description: "This is the home stadium of Liverpool FC, now the most successful football club in England."
+                }
+
+                const pointGraphic = new Graphic({
+                    geometry: point,
+                    symbol: simpleMarkerSymbol,
+
+                    attributes: attributes,
+                    popupTemplate: popupTemplate
+                });
+
+                // A sample route walking route near Anfield
+                const polyline = {
+                    type: "polyline",
+                    paths: [
+                        [-2.9705, 53.4300],
+                        [-2.9685, 53.4302],
+                        [-2.9650, 53.4305],
+                        [-2.9614, 53.4308],
+                        [-2.9585, 53.4310]
+                    ]
+                };
+
+                const polylineSymbol = {
+                    type: "simple-line",
+                    color: [246, 235, 97],
+                    width: 2
+                };
+
+                const polylineAttributes = {
+                    Name: "Matchday Route",
+                    Description: "Common walking route to Anfield Stadium from surrounding streets."
+                };
+
+                const polylinePopup = {
+                    title: "{Name}",
+                    content: "{Description}"
+                };
+
+                const polylineGraphic = new Graphic({
+                    geometry: polyline,
+                    symbol: polylineSymbol,
+                    attributes: polylineAttributes,
+                    popupTemplate: polylinePopup
+                });
+
+                // Area around Anfield Stadium
+                const polygon = {
+                    type: "polygon",
+                    rings: [
+                        [-2.9642, 53.4316],
+                        [-2.9586, 53.4316],
+                        [-2.9586, 53.4300],
+                        [-2.9642, 53.4300],
+                        [-2.9642, 53.4316]
+                    ]
+                };
+
+                const polygonSymbol = {
+                    type: "simple-fill",
+                    color: [0, 255, 0, 0.3], // transparent green
+                    outline: {
+                        color: [0, 178, 169],
+                        width: 1
+                    }
+                };
+
+                const polygonAttributes = {
+                    Name: "Anfield Grounds",
+                    Description: "Approximate area of Anfield Stadium grounds."
+                };
+
+                const polygonPopup = {
+                    title: "{Name}",
+                    content: "{Description}"
+                };
+
+                const polygonGraphic = new Graphic({
+                    geometry: polygon,
+                    symbol: polygonSymbol,
+                    attributes: polygonAttributes,
+                    popupTemplate: polygonPopup
+                });
+
+                graphicsLayer.add(pointGraphic);
+                graphicsLayer.add(polylineGraphic);
+                graphicsLayer.add(polygonGraphic);
+
+                // Create BasemapGallery widget
+                const basemapGallery = new BasemapGallery({
+                    view: view
+                });
+
+                // Optionally wrap in Expand widget to toggle visibility
+                const bgExpand = new Expand({
+                    view: view,
+                    content: basemapGallery,
+                    expandIconClass: "esri-icon-basemap",
+                    group: "top-right"
+                });
+
+                // Add the expand widget with the basemap gallery to the UI
+                view.ui.add(bgExpand, {
+                    position: "top-right"
+                });
+
+                // Locate widget: adds button to center map on user location
+                const locateWidget = new Locate({
+                    view: view,
+                    useHeadingEnabled: false,
+                    goToOverride: (view, options) => {
+                        // Zoom in when centering
+                        options.target.scale = 1500;
+                        return view.goTo(options.target);
+                    }
+                });
+                view.ui.add(locateWidget, "top-left");
+
+                // Search widget
+                const searchWidget = new Search({
+                    view: view,
+                    popupEnabled: true,
+                });
+                view.ui.add(searchWidget, {
+                    position: "top-left",
+                    index: 1
+                });
+            });
+        });
+    </script>
+
+    <!-- style -->
+    <style>
+        html,
+        body,
+        #viewDiv {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+
+</head>
+
+<body>
+    <!-- div for map display -->
+    <div id="viewDiv"></div>
+</body>
+
+</html>
